@@ -1,0 +1,57 @@
+{
+    "$schema": "https://getcomposer.org/schema.json",
+    "name": "acceptora/verification-php",
+    "description": "Framework-independent PHP client for the Acceptora verification API and MCP server.",
+    "type": "library",
+    "keywords": ["acceptora", "mcp", "openapi", "php sdk", "rest api", "verification"],
+    "homepage": "https://www.acceptora.com/docs",
+    "license": "MIT",
+    "authors": [{"name": "Acceptora", "homepage": "https://www.acceptora.com"}],
+    "support": {
+        "docs": "https://www.acceptora.com/docs",
+        "issues": "https://github.com/Elvesora/acceptora-php/issues",
+        "source": "https://github.com/Elvesora/acceptora-php"
+    },
+    "require": {
+        "php": "^8.2",
+        "ext-json": "*",
+        "ext-mbstring": "*",
+        "guzzlehttp/guzzle": "^7.9 || ^8.0",
+        "psr/log": "^2.0 || ^3.0"
+    },
+    "require-dev": {
+        "laravel/pint": "^1.29",
+        "phpstan/phpstan": "^2.1",
+        "phpunit/phpunit": "^11.5 || ^12.0"
+    },
+    "autoload": {"psr-4": {"Acceptora\\Verification\\": "src/"}},
+    "autoload-dev": {"psr-4": {"Acceptora\\Verification\\Tests\\": "tests/"}},
+    "scripts": {
+        "test": "phpunit",
+        "analyse": "phpstan analyse --no-progress",
+        "format": "pint --format agent",
+        "validate-package": "@composer validate --strict",
+        "security-audit": "@composer audit --locked --no-interaction",
+        "check": ["@validate-package", "@test", "@analyse", "@security-audit"]
+    },
+    "config": {"allow-plugins": false, "sort-packages": true},
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "archive": {
+        "exclude": [
+            "/.editorconfig",
+            "/.git",
+            "/.gitattributes",
+            "/.github",
+            "/.gitignore",
+            "/.phpstan.cache",
+            "/.phpunit.cache",
+            "/build",
+            "/composer.lock",
+            "/phpstan.neon.dist",
+            "/phpunit.xml.dist",
+            "/tests",
+            "/vendor"
+        ]
+    }
+}

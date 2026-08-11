@@ -1,0 +1,105 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - php: '8.2'
+            guzzle: '^7.9'
+            dependencies: lowest
+            composer-arguments: '--prefer-lowest --prefer-stable'
+          - php: '8.2'
+            guzzle: '^7.9'
+            dependencies: highest
+            composer-arguments: ''
+          - php: '8.2'
+            guzzle: '^8.0'
+            dependencies: highest
+            composer-arguments: ''
+          - php: '8.3'
+            guzzle: '^7.9'
+            dependencies: highest
+            composer-arguments: ''
+          - php: '8.3'
+            guzzle: '^8.0'
+            dependencies: highest
+            composer-arguments: ''
+          - php: '8.4'
+            guzzle: '^7.9'
+            dependencies: highest
+            composer-arguments: ''
+          - php: '8.4'
+            guzzle: '^8.0'
+            dependencies: highest
+            composer-arguments: ''
+          - php: '8.5'
+            guzzle: '^7.9'
+            dependencies: highest
+            composer-arguments: ''
+          - php: '8.5'
+            guzzle: '^8.0'
+            dependencies: highest
+            composer-arguments: ''
+
+    name: PHP ${{ matrix.php }} / Guzzle ${{ matrix.guzzle }} / ${{ matrix.dependencies }} dependencies
+
+    steps:
+      - name: Check out package
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+          extensions: json, mbstring
+          tools: composer:v2
+
+      - name: Validate Composer metadata
+        run: composer validate --strict
+
+      - name: Install dependency matrix
+        run: composer update --with "guzzlehttp/guzzle:${{ matrix.guzzle }}" --with-all-dependencies --prefer-dist --no-interaction --no-progress ${{ matrix.composer-arguments }}
+
+      - name: Run package quality gate
+        run: composer check
+
+      - name: Verify PHP formatting
+        run: composer format && git diff --exit-code -- src tests
+
+      - name: Create release archive
+        if: matrix.php == '8.5' && matrix.guzzle == '^8.0'
+        run: |
+          mkdir -p "$RUNNER_TEMP/acceptora-archive"
+          composer archive --format=zip --dir="$RUNNER_TEMP/acceptora-archive" --file=acceptora-verification-php
+
+      - name: Inspect release archive
+        if: matrix.php == '8.5' && matrix.guzzle == '^8.0'
+        shell: bash
+        run: |
+          archive="$RUNNER_TEMP/acceptora-archive/acceptora-verification-php.zip"
+          manifest="$RUNNER_TEMP/acceptora-archive-files.txt"
+          test -f "$archive"
+          unzip -Z1 "$archive" > "$manifest"
+
+          if grep -E '(^|/)(\.editorconfig|\.gitattributes|\.github|\.gitignore|\.phpstan\.cache|\.phpunit\.cache|build|composer\.lock|phpstan\.neon\.dist|phpunit\.xml\.dist|tests|vendor)(/|$)' "$manifest"; then
+            echo 'The release archive contains development-only files.' >&2
+            exit 1
+          fi
+
+          grep -E '(^|/)src/Client\.php$' "$manifest"
+          grep -E '(^|/)resources/contract-manifest\.json$' "$manifest"
+          grep -E '(^|/)resources/contracts/v1/error\.schema\.json$' "$manifest"

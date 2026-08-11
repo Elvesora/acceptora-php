@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Acceptora documentation
+    url: https://www.acceptora.com/docs
+    about: Read product setup and workflow guidance.
+  - name: Security reporting
+    url: https://www.acceptora.com/contact
+    about: Request a private reporting channel without including vulnerability details.

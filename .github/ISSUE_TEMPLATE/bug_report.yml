@@ -1,0 +1,60 @@
+name: Bug report
+description: Report a reproducible defect in the Acceptora Verification PHP package.
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not include bearer tokens, credentials, private source material, or customer data. Follow SECURITY.md for suspected vulnerabilities.
+  - type: input
+    id: package_version
+    attributes:
+      label: Package version
+      description: The exact installed version from Composer.
+      placeholder: 1.0.0
+    validations:
+      required: true
+  - type: input
+    id: php_version
+    attributes:
+      label: PHP version
+      placeholder: 8.5.6
+    validations:
+      required: true
+  - type: input
+    id: guzzle_version
+    attributes:
+      label: Guzzle version
+      placeholder: 8.0.2
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Provide the smallest safe code sample and steps that reproduce the problem.
+      render: php
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Include redacted exception type, error code, and correlation ID when available.
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety confirmation
+      options:
+        - label: I removed credentials, tokens, private source material, and customer data.
+          required: true
+        - label: This report does not disclose a suspected security vulnerability.
+          required: true
