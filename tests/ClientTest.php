@@ -518,7 +518,7 @@ final class ClientTest extends TestCase
             'data' => [
                 'contract_version' => null,
                 'integration_version' => '1.0.0',
-                'skill_version' => '1.0.0',
+                'skill_version' => '1.1.0',
                 'schema_registry' => 'contracts/v1/mcp-tools.json',
                 self::TOKEN => self::TOKEN,
             ],
@@ -712,7 +712,25 @@ final class ClientTest extends TestCase
         $result = $client->verifyCompatibility('corr-compatible');
 
         $this->assertSame(['get_verification_status'], $result->tools);
+        $this->assertSame('1.0.0', $result->contractVersion);
         $this->assertSame('2025-11-25', $result->protocolVersion);
+        $this->assertSame('1.0.0', $result->serverVersion);
+    }
+
+    public function test_compatibility_preflight_rejects_the_previous_skill_version(): void
+    {
+        $inputSchema = ['type' => 'object'];
+        $outputSchema = ['type' => 'object'];
+        $client = $this->client([
+            $this->contractResponse(skillVersion: '1.0.0'),
+        ], manifest: $this->singleToolManifest($inputSchema, $outputSchema));
+
+        try {
+            $client->verifyCompatibility();
+            $this->fail('Expected the previous skill version to fail compatibility.');
+        } catch (ContractException $exception) {
+            $this->assertSame('CONTRACT_UNSUPPORTED', $exception->errorCode);
+        }
     }
 
     public function test_compatibility_preflight_rejects_read_only_annotation_drift(): void
@@ -1280,12 +1298,12 @@ PHP;
         return $this->jsonResponse(200, ['jsonrpc' => '2.0', 'id' => $id, 'result' => $result], $headers);
     }
 
-    private function contractResponse(): Response
+    private function contractResponse(string $skillVersion = '1.1.0'): Response
     {
         return $this->jsonResponse(200, [
             'data' => [
                 'contract_version' => '1.0.0', 'integration_version' => '1.0.0',
-                'skill_version' => '1.0.0', 'schema_registry' => 'contracts/v1/mcp-tools.json',
+                'skill_version' => $skillVersion, 'schema_registry' => 'contracts/v1/mcp-tools.json',
             ],
             'meta' => ['contract_version' => '1.0.0'],
         ]);
@@ -1300,7 +1318,7 @@ PHP;
         return new ContractManifest([
             'schema_version' => 1,
             'package' => ['name' => 'acceptora/verification-php', 'version' => '1.0.0'],
-            'integration' => ['version' => '1.0.0'], 'skill' => ['version' => '1.0.0'],
+            'integration' => ['version' => '1.0.0'], 'skill' => ['version' => '1.1.0'],
             'contract' => ['version' => '1.0.0', 'mcp_protocol_version' => '2025-11-25'],
             'server' => ['name' => 'Acceptora Verification', 'version' => '1.0.0'],
             'http_endpoints' => [],

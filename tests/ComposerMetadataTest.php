@@ -85,6 +85,27 @@ final class ComposerMetadataTest extends TestCase
         );
 
         $this->assertSame(1, $manifest['schema_version']);
+        $this->assertSame(['name' => 'acceptora/verification-php', 'version' => '1.0.0'], $manifest['package']);
+        $this->assertSame(['version' => '1.0.0'], $manifest['integration']);
+        $this->assertSame(['version' => '1.1.0'], $manifest['skill']);
+        $this->assertSame(['version' => '1.0.0', 'mcp_protocol_version' => '2025-11-25'], $manifest['contract']);
+        $this->assertSame(['name' => 'Acceptora Verification', 'version' => '1.0.0'], $manifest['server']);
+        $this->assertSame([
+            'AUTH_REQUIRED',
+            'SCOPE_DENIED',
+            'FEATURE_AMBIGUOUS',
+            'FEATURE_ARCHIVED',
+            'REVISION_CONFLICT',
+            'IDEMPOTENCY_CONFLICT',
+            'SOURCE_STALE',
+            'UNCOVERED_CHANGED_SURFACE',
+            'EXCEPTION_POLICY_DENIED',
+            'SECRET_REJECTED',
+            'PAYLOAD_TOO_LARGE',
+            'RATE_LIMITED',
+            'CONTRACT_UNSUPPORTED',
+            'SERVICE_UNAVAILABLE',
+        ], $manifest['error_codes']);
         $this->assertSame([
             'resolve_feature' => 'features:resolve',
             'get_feature_context' => 'features:read',
@@ -144,6 +165,9 @@ final class ComposerMetadataTest extends TestCase
         $this->assertStringContainsString('Use the OpenAPI document plus `projectMetadata()` as the REST', $readme);
         $this->assertStringContainsString('Run `verifyCompatibility()` before relying on MCP.', $readme);
         $this->assertStringContainsString('check-completion-gate.input.schema.json', $readme);
+        $this->assertStringContainsString('`evidence_sufficiency`', $readme);
+        $this->assertStringContainsString('`missing_credentials`', $readme);
+        $this->assertStringContainsString('no automated result creates a human decision or final', $readme);
         $this->assertStringContainsString('## Support and contributing', $readme);
         $this->assertStringContainsString('[CONTRIBUTING.md](CONTRIBUTING.md)', $readme);
         $this->assertStringContainsString('[SECURITY.md](SECURITY.md)', $readme);
@@ -191,6 +215,43 @@ final class ComposerMetadataTest extends TestCase
         $this->assertSame($expected, $actual);
     }
 
+    public function test_bundled_automated_evidence_distinguishes_sufficiency_and_blockers(): void
+    {
+        $common = json_decode(
+            (string) file_get_contents(__DIR__.'/../resources/contracts/v1/common.schema.json'),
+            true,
+            512,
+            JSON_THROW_ON_ERROR,
+        );
+        $automatedEvidence = $common['$defs']['automatedEvidence'];
+
+        $this->assertSame(
+            ['sufficient', 'insufficient'],
+            $automatedEvidence['properties']['evidence_sufficiency']['enum'],
+        );
+        $this->assertSame([
+            'missing_credentials',
+            'insufficient_permissions',
+            'missing_prerequisite',
+            'environment_unavailable',
+            'external_dependency_unavailable',
+            'resource_limit',
+            'other',
+        ], $automatedEvidence['properties']['blocker_reason']['enum']);
+        $this->assertNotContains('evidence_sufficiency', $automatedEvidence['required']);
+        $this->assertNotContains('blocker_reason', $automatedEvidence['required']);
+        $this->assertSame('not_run', $automatedEvidence['allOf'][0]['then']['properties']['outcome']['const']);
+        $this->assertSame(
+            'insufficient',
+            $automatedEvidence['allOf'][0]['then']['properties']['evidence_sufficiency']['const'],
+        );
+        $this->assertSame('not_run', $automatedEvidence['allOf'][1]['if']['properties']['outcome']['const']);
+        $this->assertSame(
+            'insufficient',
+            $automatedEvidence['allOf'][1]['then']['properties']['evidence_sufficiency']['const'],
+        );
+    }
+
     public function test_every_bundled_contract_document_is_valid_json_object(): void
     {
         $files = glob(__DIR__.'/../resources/contracts/v1/*.json') ?: [];
@@ -207,15 +268,30 @@ final class ComposerMetadataTest extends TestCase
             $this->assertIsArray($decoded, $file);
             $this->assertFalse(array_is_list($decoded), $file);
         }
+
+        $manifest = json_decode(
+            (string) file_get_contents(__DIR__.'/../resources/contract-manifest.json'),
+            true,
+            512,
+            JSON_THROW_ON_ERROR,
+        );
+        $errorCodeSchema = json_decode(
+            (string) file_get_contents(__DIR__.'/../resources/contracts/v1/enums/error-code.schema.json'),
+            true,
+            512,
+            JSON_THROW_ON_ERROR,
+        );
+
+        $this->assertSame($manifest['error_codes'], $errorCodeSchema['enum']);
     }
 
-    public function test_customer_release_documents_do_not_contain_intermediate_release_statuses(): void
+    public function test_customer_release_documents_keep_release_status_current(): void
     {
         $readme = (string) file_get_contents(__DIR__.'/../README.md');
         $changelog = (string) file_get_contents(__DIR__.'/../CHANGELOG.md');
         $security = (string) file_get_contents(__DIR__.'/../SECURITY.md');
 
-        $this->assertStringNotContainsString('['.'Unreleased'.']', $changelog);
+        $this->assertStringContainsString('## [Unreleased]', $changelog);
         $this->assertStringContainsString('## [1.0.0] - 2026-08-11', $changelog);
         $this->assertStringNotContainsString('No tagged '.'release', $readme.$security);
         $this->assertStringNotContainsString('Unreleased '.'source', $security);

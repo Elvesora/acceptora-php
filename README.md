@@ -251,6 +251,38 @@ The bundled schemas remain useful for development, code review, and servers
 where the discovery endpoint is not yet available, but they do not prove that a
 particular server has enabled REST v1.
 
+### Automated evidence semantics
+
+`reconcile_checklist` and `record_verification_exception` accept structured
+`automated_evidence` entries. `outcome` records whether a command or check ran
+and what it returned. The optional `evidence_sufficiency` field separately says
+whether that result is enough to support the claimed behavior: `sufficient` or
+`insufficient`. A passing automated test can therefore still be marked
+`insufficient`, and no automated result creates a human decision or final
+acceptance.
+
+When `outcome` is `not_run`, an explicit `evidence_sufficiency` can only be
+`insufficient`. Use the optional `blocker_reason` for a machine-readable cause:
+`missing_credentials`, `insufficient_permissions`, `missing_prerequisite`,
+`environment_unavailable`, `external_dependency_unavailable`, `resource_limit`,
+or `other`. A supplied blocker reason requires `outcome: not_run`; when
+`evidence_sufficiency` is also supplied, it must be `insufficient`.
+
+```php
+$payload['automated_evidence'][] = [
+    'semantic_key' => 'browser.authenticated_checkout',
+    'kind' => 'browser',
+    'name' => 'Authenticated checkout smoke test',
+    'target' => '/checkout',
+    'executed_at' => '2026-08-18T10:00:00Z',
+    'outcome' => 'not_run',
+    'evidence_sufficiency' => 'insufficient',
+    'blocker_reason' => 'missing_credentials',
+    'summary' => 'The test account credential was not available.',
+    'source_revision' => 'git:0123456789abcdef',
+];
+```
+
 ## MCP tools
 
 The client initializes a Streamable HTTP MCP session on the first tool call, sends the `notifications/initialized` notification, retains a validated optional MCP session ID, rejects session-ID changes after initialization, and accepts JSON or Server-Sent Events JSON-RPC responses.
@@ -274,7 +306,7 @@ Example:
 $versions = [
     'integration_name' => 'acceptora-verification-php',
     'integration_version' => '1.0.0',
-    'skill_version' => '1.0.0',
+    'skill_version' => '1.1.0',
     'contract_version' => '1.0.0',
 ];
 
@@ -388,9 +420,11 @@ graph.
 
 ## Versioning
 
-The package follows Semantic Versioning. The bundled manifest declares package
-and contract compatibility version `1.0.0`. Package releases declare
-compatibility with an Acceptora contract version in the bundled manifest.
+The package follows Semantic Versioning. The bundled manifest identifies
+package, integration, contract, and server version `1.0.0`, and compatible
+Acceptora Agent Skill version `1.1.0`. Package releases declare compatibility
+with Acceptora integration, skill, contract, and server versions in the bundled
+manifest.
 Additive package features use minor releases; compatible fixes use patch
 releases; incompatible public API or supported-contract changes require a major
 release.

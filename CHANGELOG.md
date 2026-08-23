@@ -4,6 +4,17 @@ All notable changes to this package are documented in this file.
 
 The format follows Keep a Changelog, and releases follow Semantic Versioning.
 
+## [Unreleased]
+
+### Added
+
+- Document the optional `evidence_sufficiency` and structured `blocker_reason` fields for automated evidence, and pin the updated reconciliation and verification-exception input schema digests.
+- Accept Acceptora Agent Skill `1.1.0` during compatibility preflight while retaining package, integration, contract, and server version `1.0.0`.
+
+### Changed
+
+- Remove the obsolete reauthentication error from the bundled public error-code contract and manifest.
+
 ## [1.0.0] - 2026-08-11
 
 ### Added
